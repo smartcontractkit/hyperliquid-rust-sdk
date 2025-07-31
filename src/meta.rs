@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use alloy::primitives::B128;
+use alloy::primitives::{B128, U256};
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -112,4 +112,13 @@ pub struct TokenInfo {
     pub index: usize,
     pub token_id: B128,
     pub is_canonical: bool,
+    pub evm_contract: Option<EvmContractInfo>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EvmContractInfo {
+    pub address: U256,
+    #[serde(rename = "evm_extra_wei_decimals")]
+    pub evm_extra_wei_decimals: i8,
 }

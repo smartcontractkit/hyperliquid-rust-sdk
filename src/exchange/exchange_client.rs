@@ -25,8 +25,8 @@ use crate::{
     prelude::*,
     req::HttpClient,
     signature::{sign_l1_action, sign_typed_data},
-    BaseUrl, BulkCancelCloid, ClassTransfer, Error, ExchangeResponseStatus, SpotDeployUserGenesis,
-    SpotSend, SpotUser, VaultTransfer, Withdraw3,
+    BaseUrl, BulkCancelCloid, ClassTransfer, Error, ExchangeResponseStatus, SpotDeploy, SpotSend,
+    SpotUser, VaultTransfer, Withdraw3,
 };
 
 #[derive(Debug)]
@@ -75,7 +75,7 @@ pub enum Actions {
     SpotUser(SpotUser),
     VaultTransfer(VaultTransfer),
     SpotSend(SpotSend),
-    SpotDeployUserGenesis(SpotDeployUserGenesis),
+    SpotDeploy(SpotDeploy),
     SetReferrer(SetReferrer),
     ApproveBuilderFee(ApproveBuilderFee),
     EvmUserModify(EvmUserModify),
@@ -709,7 +709,6 @@ impl ExchangeClient {
         let signature = sign_typed_data(&withdraw, wallet)?;
         let action = serde_json::to_value(Actions::Withdraw3(withdraw))
             .map_err(|e| Error::JsonParse(e.to_string()))?;
-
         self.post(action, signature, timestamp).await
     }
 
@@ -745,17 +744,17 @@ impl ExchangeClient {
 
     pub async fn spot_deploy_user_genesis(
         &self,
-        token: &str,
-        users_and_wei: &[(String, String)],
-        existing_token_and_wei: &[(String, String)],
+        token: u64,
+        user_and_wei: &[(String, String)],
+        existing_token_and_wei: &[(u64, String)],
         wallet: Option<&PrivateKeySigner>,
     ) -> Result<ExchangeResponseStatus> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
 
-        let action = Actions::SpotDeployUserGenesis(SpotDeployUserGenesis {
-            token: token.to_string(),
-            users_and_wei: users_and_wei.to_vec(),
+        let action = Actions::SpotDeploy(SpotDeploy::UserGenesis {
+            token,
+            user_and_wei: user_and_wei.to_vec(),
             existing_token_and_wei: existing_token_and_wei.to_vec(),
             blacklist_users: None,
         });

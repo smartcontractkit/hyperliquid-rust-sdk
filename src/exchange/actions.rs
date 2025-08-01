@@ -186,11 +186,14 @@ impl Eip712 for SpotSend {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct SpotDeployUserGenesis {
-    pub token: String,
-    pub users_and_wei: Vec<(String, String)>,
-    pub existing_token_and_wei: Vec<(String, String)>,
-    pub blacklist_users: Option<Vec<(String, bool)>>,
+pub enum SpotDeploy {
+    #[serde(rename_all = "camelCase")]
+    UserGenesis {
+        token: u64,
+        user_and_wei: Vec<(String, String)>,
+        existing_token_and_wei: Vec<(u64, String)>,
+        blacklist_users: Option<Vec<(String, bool)>>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

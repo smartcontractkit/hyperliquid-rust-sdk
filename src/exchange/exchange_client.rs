@@ -25,8 +25,8 @@ use crate::{
     prelude::*,
     req::HttpClient,
     signature::{sign_l1_action, sign_typed_data},
-    BaseUrl, BulkCancelCloid, ClassTransfer, Error, ExchangeResponseStatus, SpotSend, SpotUser,
-    VaultTransfer, Withdraw3,
+    BaseUrl, BulkCancelCloid, ClassTransfer, Error, ExchangeResponseStatus, SpotDeployUserGenesis,
+    SpotSend, SpotUser, VaultTransfer, Withdraw3,
 };
 
 #[derive(Debug)]
@@ -75,6 +75,7 @@ pub enum Actions {
     SpotUser(SpotUser),
     VaultTransfer(VaultTransfer),
     SpotSend(SpotSend),
+    SpotDeployUserGenesis(SpotDeployUserGenesis),
     SetReferrer(SetReferrer),
     ApproveBuilderFee(ApproveBuilderFee),
     EvmUserModify(EvmUserModify),
@@ -739,6 +740,30 @@ impl ExchangeClient {
         let action = serde_json::to_value(Actions::SpotSend(spot_send))
             .map_err(|e| Error::JsonParse(e.to_string()))?;
 
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn spot_deploy_user_genesis(
+        &self,
+        token: &str,
+        users_and_wei: &[(String, String)],
+        existing_token_and_wei: &[(String, String)],
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<ExchangeResponseStatus> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeployUserGenesis(SpotDeployUserGenesis {
+            token: token.to_string(),
+            users_and_wei: users_and_wei.to_vec(),
+            existing_token_and_wei: existing_token_and_wei.to_vec(),
+            blacklist_users: None,
+        });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
         self.post(action, signature, timestamp).await
     }
 

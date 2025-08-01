@@ -113,6 +113,7 @@ pub struct TokenInfo {
     pub token_id: B128,
     pub is_canonical: bool,
     pub evm_contract: Option<EvmContractInfo>,
+    pub full_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

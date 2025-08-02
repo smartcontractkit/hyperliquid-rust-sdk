@@ -186,6 +186,14 @@ impl Eip712 for SpotSend {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct TokenSpec {
+    pub name: String,
+    pub sz_decimals: u32,
+    pub wei_decimals: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub enum SpotDeploy {
     #[serde(rename_all = "camelCase")]
     UserGenesis {
@@ -202,6 +210,26 @@ pub enum SpotDeploy {
         #[serde(skip_serializing_if = "Option::is_none")]
         no_hyperliquidity: Option<bool>,
     },
+    #[serde(rename_all = "camelCase")]
+    RegisterToken2 {
+        spec: TokenSpec,
+        max_gas: u64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        full_name: Option<String>,
+    },
+    #[serde(rename_all = "camelCase")]
+    RegisterSpot { tokens: (u64, u64) },
+    #[serde(rename_all = "camelCase")]
+    RegisterHyperliquidity {
+        spot: u64,
+        start_px: String,
+        order_sz: String,
+        n_orders: u64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        n_seeded_levels: Option<u64>,
+    },
+    #[serde(rename_all = "camelCase")]
+    SetDeployerTradingFeeShare { token: u64, share: String },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

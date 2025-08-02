@@ -12,7 +12,7 @@ use crate::{
     exchange::{
         actions::{
             ApproveAgent, ApproveBuilderFee, BulkCancel, BulkModify, BulkOrder, EvmUserModify,
-            ScheduleCancel, SetReferrer, UpdateIsolatedMargin, UpdateLeverage, UsdSend,
+            ScheduleCancel, SetReferrer, TokenSpec, UpdateIsolatedMargin, UpdateLeverage, UsdSend,
         },
         cancel::{CancelRequest, CancelRequestCloid, ClientCancelRequestCloid},
         modify::{ClientModifyRequest, ModifyRequest},
@@ -138,12 +138,12 @@ impl ExchangeClient {
         })
     }
 
-    async fn post(
+    async fn post<T: for<'a> Deserialize<'a>>(
         &self,
         action: serde_json::Value,
         signature: Signature,
         nonce: u64,
-    ) -> Result<ExchangeResponseStatus> {
+    ) -> Result<T> {
         // let signature = ExchangeSignature {
         //     r: signature.r(),
         //     s: signature.s(),
@@ -782,6 +782,92 @@ impl ExchangeClient {
             max_supply,
             no_hyperliquidity,
         });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn spot_deploy_register_token2(
+        &self,
+        spec: TokenSpec,
+        max_gas: u64,
+        full_name: Option<String>,
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<ExchangeResponseStatus> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeploy(SpotDeploy::RegisterToken2 {
+            spec,
+            max_gas,
+            full_name,
+        });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn spot_deploy_register_spot(
+        &self,
+        tokens: (u64, u64),
+        wallet: Option<&PrivateKeySigner>,
+        // The returned type is unclear in the API docs, so we duck-type it.
+    ) -> Result<serde_json::Value> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeploy(SpotDeploy::RegisterSpot { tokens });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn spot_deploy_register_hyperliquidity(
+        &self,
+        spot: u64,
+        start_px: String,
+        order_sz: String,
+        n_orders: u64,
+        n_seeded_levels: Option<u64>,
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<ExchangeResponseStatus> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeploy(SpotDeploy::RegisterHyperliquidity {
+            spot,
+            start_px,
+            order_sz,
+            n_orders,
+            n_seeded_levels,
+        });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn spot_deploy_set_deployer_trading_fee_share(
+        &self,
+        token: u64,
+        share: String,
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<ExchangeResponseStatus> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeploy(SpotDeploy::SetDeployerTradingFeeShare { token, share });
 
         let connection_id = action.hash(timestamp, self.vault_address)?;
         let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;

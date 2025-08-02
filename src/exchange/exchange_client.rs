@@ -93,6 +93,7 @@ impl Actions {
         } else {
             bytes.push(0);
         }
+
         Ok(keccak256(bytes))
     }
 }

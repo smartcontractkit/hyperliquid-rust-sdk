@@ -192,6 +192,7 @@ pub enum SpotDeploy {
         token: u64,
         user_and_wei: Vec<(String, String)>,
         existing_token_and_wei: Vec<(u64, String)>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         blacklist_users: Option<Vec<(String, bool)>>,
     },
 }

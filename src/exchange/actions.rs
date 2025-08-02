@@ -195,6 +195,13 @@ pub enum SpotDeploy {
         #[serde(skip_serializing_if = "Option::is_none")]
         blacklist_users: Option<Vec<(String, bool)>>,
     },
+    #[serde(rename_all = "camelCase")]
+    Genesis {
+        token: u64,
+        max_supply: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        no_hyperliquidity: Option<bool>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

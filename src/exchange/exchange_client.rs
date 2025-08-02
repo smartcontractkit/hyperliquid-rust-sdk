@@ -767,6 +767,29 @@ impl ExchangeClient {
         self.post(action, signature, timestamp).await
     }
 
+    pub async fn spot_deploy_genesis(
+        &self,
+        token: u64,
+        max_supply: String,
+        no_hyperliquidity: Option<bool>,
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<ExchangeResponseStatus> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeploy(SpotDeploy::Genesis {
+            token,
+            max_supply,
+            no_hyperliquidity,
+        });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
     pub async fn set_referrer(
         &self,
         code: String,

@@ -230,6 +230,12 @@ pub enum SpotDeploy {
     },
     #[serde(rename_all = "camelCase")]
     SetDeployerTradingFeeShare { token: u64, share: String },
+    #[serde(rename_all = "camelCase")]
+    RequestEvmContract {
+        token: u64,
+        address: Address,
+        evm_extra_wei_decimals: i8,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -281,6 +287,24 @@ pub struct ApproveBuilderFee {
 pub struct ScheduleCancel {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FinalizeEvmContract {
+    pub token: u64,
+    pub input: FinalizeEvmContractInput,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum FinalizeEvmContractInput {
+    #[serde(rename_all = "camelCase")]
+    Create {
+        nonce: u64,
+    },
+    FirstStorageSlot,
+    CustomStorageSlot,
 }
 
 impl Eip712 for ApproveBuilderFee {

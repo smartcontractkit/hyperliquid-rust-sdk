@@ -25,8 +25,8 @@ use crate::{
     prelude::*,
     req::HttpClient,
     signature::{sign_l1_action, sign_typed_data},
-    BaseUrl, BulkCancelCloid, ClassTransfer, Error, ExchangeResponseStatus, SpotDeploy, SpotSend,
-    SpotUser, VaultTransfer, Withdraw3,
+    BaseUrl, BulkCancelCloid, ClassTransfer, Error, ExchangeResponseStatus, FinalizeEvmContract,
+    FinalizeEvmContractInput, SpotDeploy, SpotSend, SpotUser, VaultTransfer, Withdraw3,
 };
 
 #[derive(Debug)]
@@ -80,6 +80,7 @@ pub enum Actions {
     ApproveBuilderFee(ApproveBuilderFee),
     EvmUserModify(EvmUserModify),
     ScheduleCancel(ScheduleCancel),
+    FinalizeEvmContract(FinalizeEvmContract),
 }
 
 impl Actions {
@@ -749,7 +750,7 @@ impl ExchangeClient {
         user_and_wei: &[(String, String)],
         existing_token_and_wei: &[(u64, String)],
         wallet: Option<&PrivateKeySigner>,
-    ) -> Result<ExchangeResponseStatus> {
+    ) -> Result<serde_json::Value> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
 
@@ -773,7 +774,7 @@ impl ExchangeClient {
         max_supply: String,
         no_hyperliquidity: Option<bool>,
         wallet: Option<&PrivateKeySigner>,
-    ) -> Result<ExchangeResponseStatus> {
+    ) -> Result<serde_json::Value> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
 
@@ -796,7 +797,7 @@ impl ExchangeClient {
         max_gas: u64,
         full_name: Option<String>,
         wallet: Option<&PrivateKeySigner>,
-    ) -> Result<ExchangeResponseStatus> {
+    ) -> Result<serde_json::Value> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
 
@@ -817,7 +818,6 @@ impl ExchangeClient {
         &self,
         tokens: (u64, u64),
         wallet: Option<&PrivateKeySigner>,
-        // The returned type is unclear in the API docs, so we duck-type it.
     ) -> Result<serde_json::Value> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
@@ -839,7 +839,7 @@ impl ExchangeClient {
         n_orders: u64,
         n_seeded_levels: Option<u64>,
         wallet: Option<&PrivateKeySigner>,
-    ) -> Result<ExchangeResponseStatus> {
+    ) -> Result<serde_json::Value> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
 
@@ -863,11 +863,52 @@ impl ExchangeClient {
         token: u64,
         share: String,
         wallet: Option<&PrivateKeySigner>,
-    ) -> Result<ExchangeResponseStatus> {
+    ) -> Result<serde_json::Value> {
         let wallet = wallet.unwrap_or(&self.wallet);
         let timestamp = next_nonce();
 
         let action = Actions::SpotDeploy(SpotDeploy::SetDeployerTradingFeeShare { token, share });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn spot_deploy_request_evm_contract(
+        &self,
+        token: u64,
+        address: Address,
+        evm_extra_wei_decimals: i8,
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<serde_json::Value> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::SpotDeploy(SpotDeploy::RequestEvmContract {
+            token,
+            address,
+            evm_extra_wei_decimals,
+        });
+
+        let connection_id = action.hash(timestamp, self.vault_address)?;
+        let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;
+        let is_mainnet = self.http_client.is_mainnet();
+        let signature = sign_l1_action(wallet, connection_id, is_mainnet)?;
+        self.post(action, signature, timestamp).await
+    }
+
+    pub async fn finalize_evm_contract(
+        &self,
+        token: u64,
+        input: FinalizeEvmContractInput,
+        wallet: Option<&PrivateKeySigner>,
+    ) -> Result<serde_json::Value> {
+        let wallet = wallet.unwrap_or(&self.wallet);
+        let timestamp = next_nonce();
+
+        let action = Actions::FinalizeEvmContract(FinalizeEvmContract { token, input });
 
         let connection_id = action.hash(timestamp, self.vault_address)?;
         let action = serde_json::to_value(&action).map_err(|e| Error::JsonParse(e.to_string()))?;

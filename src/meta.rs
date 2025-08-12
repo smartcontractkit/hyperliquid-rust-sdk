@@ -123,3 +123,31 @@ pub struct EvmContractInfo {
     #[serde(rename = "evm_extra_wei_decimals")]
     pub evm_extra_wei_decimals: i8,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenDetails {
+    pub name: String,
+    pub max_supply: String,
+    pub total_supply: String,
+    pub circulating_supply: String,
+    pub sz_decimals: u8,
+    pub wei_decimals: u8,
+    pub mid_px: String,
+    pub mark_px: String,
+    pub prev_day_px: String,
+    pub genesis: TokenGenesisDetails,
+    pub deployer: String,
+    pub deploy_gas: String,
+    pub deploy_time: String,
+    pub seeded_usdc: String,
+    pub non_circulating_user_balances: Vec<(String, String)>,
+    pub future_emissions: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenGenesisDetails {
+    pub user_balances: Vec<(String, String)>,
+    pub existing_token_balances: Vec<(String, String)>,
+}

@@ -19,6 +19,6 @@ pub use info::{info_client::*, *};
 pub use market_maker::{MarketMaker, MarketMakerInput, MarketMakerRestingOrder};
 pub use meta::{
     AssetContext, AssetMeta, EvmContractInfo, Meta, MetaAndAssetCtxs, SpotAssetMeta, SpotMeta,
-    TokenInfo,
+    TokenDetails, TokenGenesisDetails, TokenInfo,
 };
 pub use ws::*;

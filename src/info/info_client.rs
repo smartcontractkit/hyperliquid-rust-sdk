@@ -10,7 +10,7 @@ use crate::{
         CandlesSnapshotResponse, FundingHistoryResponse, L2SnapshotResponse, OpenOrdersResponse,
         OrderInfo, RecentTradesResponse, UserFillsResponse, UserStateResponse,
     },
-    meta::{AssetContext, Meta, SpotMeta, SpotMetaAndAssetCtxs},
+    meta::{AssetContext, Meta, SpotMeta, SpotMetaAndAssetCtxs, TokenDetails},
     prelude::*,
     req::HttpClient,
     ws::{Subscription, WsManager},
@@ -88,6 +88,10 @@ pub enum InfoRequest {
     },
     HistoricalOrders {
         user: Address,
+    },
+    #[serde(rename_all = "camelCase")]
+    TokenDetails {
+        token_id: String,
     },
 }
 
@@ -214,6 +218,11 @@ impl InfoClient {
 
     pub async fn spot_meta(&self) -> Result<SpotMeta> {
         let input = InfoRequest::SpotMeta;
+        self.send_info_request(input).await
+    }
+
+    pub async fn token_details(&self, token_id: String) -> Result<TokenDetails> {
+        let input = InfoRequest::TokenDetails { token_id };
         self.send_info_request(input).await
     }
 
